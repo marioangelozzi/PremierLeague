@@ -1,1 +1,1 @@
-web: streamlit run --server.port $PORT predict_result.py
+web: web: python predict_result.py
