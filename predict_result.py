@@ -1,83 +1,33 @@
-import pandas as pd
+from flask import Flask, jsonify, request 
 import numpy as np
-import sqlite3
+import pandas as pd
 
-# show all available columns
-pd.set_option('display.max_columns', 500)
-# show all available rows
-pd.set_option('display.max_rows', 500)
+# instancia o objeto do Flask
+app = Flask(__name__)
 
-# models
-import statsmodels.formula.api as smf
-import statsmodels.api as sm
+@app.route('/', methods=['GET'])
+def landing_page():
+	return "hello world"
 
-# regression metrics
-from sklearn.metrics import accuracy_score
+@app.route('/html', methods=['GET'])
+def landing_page_html():
+	return '<html><h1 style="color:red">hello world<h1></html>'
 
-# warnig treatments
-import warnings
-warnings.filterwarnings('ignore')
+@app.route('/array', methods=['GET'])
+def array():
+    response = np.random.randint(0,100, 10)
+    return np.array_str(response)
 
-# ensemble models 
-from xgboost import XGBRegressor, XGBClassifier
+@app.route('/ndarray', methods=['GET'])
+def ndarray():
+    response = np.random.randint(0,100, 10).reshape(5,-1)
+    return np.array_str(response)
 
-# statistics
-from scipy.stats import loguniform, uniform
-
-# import model
-import pickle
-
-# system
-import sys
-import argparse 
-
-
-def df_return(df_res_predict, pred_prob, pred_res):
-    
-    df = df_res_predict[['Game_Date', 'HomeTeam', 'AwayTeam']]
-    
-    df['Prob_Win_HomeTeam'] = pred_prob[:, 0]
-    df['Prob_Draw'] = pred_prob[:, 1]
-    df['Prob_Win_AwayTeam'] = pred_prob[:, 2]
-    
-    df['Result'] = pred_res
-    
-    df['Result'].loc[ df['Result'] == 0 ] = 'Home team win'
-    df['Result'].loc[ df['Result'] == 1 ] = 'Draw'
-    df['Result'].loc[ df['Result'] == 2 ] = 'Away team win'
-    
-    return df    
-
-
-def predict_result(GameDate01, GameDate02):
-    
-    # conexão com o BD Premier League - AWS
-    dbname = 'premierleague.cqoq1gvjbsxj.us-east-2.rds.amazonaws.com'
-    db_PremierLeague = sqlite3.connect(dbname)
-
-    query = """ SELECT * FROM PremierLeague_Info"""
-    
-    df_result = pd.read_sql(query, db_PremierLeague)
-    
-    df_res_predict = df_result.loc[(df_result['Game_Date']>=GameDate01) & (df_result['Game_Date']<=GameDate02)]
-        
-    # Carregar modelo
-    with open('premier_xgboost.pkl', 'rb') as f:
-        xb = pickle.load(f)
-    
-    pred_prob = xb.predict_proba(df_res_predict)*100
-    
-    pred_res = xb.predict(df_res_predict)
-    
-    df_res_predict_final = df_return(df_res_predict, pred_prob, pred_res)
-    
-    return pred_prob, pred_res, df_res_predict_final
-
+@app.route('/table', methods=['GET'])
+def table():
+    response = np.random.randint(0,100, 10).reshape(5,-1)
+    response = pd.DataFrame(response, columns=['col1','col2'])
+    return response.to_html()
 
 if __name__ == '__main__':
-    print('Range de datas de previsão')
-    GameDate01 = input('Digite a data inicial yyyy-mm-dd: ')
-    GameDate02 = input('Digite a data final yyyy-mm-dd: ')
-    pred_prob, pred_res, df_res_predict = predict_result(GameDate01, GameDate02)
-    print(df_res_predict)
-
+    app.run(debug=True)
